@@ -1,0 +1,12 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Python: Launch Console App",
+      "type": "python",
+      "request": "launch",
+      "module": "python-langchain",
+      "console": "integratedTerminal"
+    }
+  ]
+}

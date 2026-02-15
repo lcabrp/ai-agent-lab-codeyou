@@ -1,0 +1,13 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run Python Console App",
+      "type": "shell",
+      "command": "python",
+      "args": ["-m", "python-langchain"],
+      "group": "build",
+      "problemMatcher": []
+    }
+  ]
+}
