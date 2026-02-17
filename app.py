@@ -3,10 +3,11 @@
 from dotenv import load_dotenv
 import os
 from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, SystemMessage
 from langchain.agents import create_agent
 from langchain_core.tools import Tool
 from datetime import datetime
+import time
 
 def calculator(expression: str) -> str:
     """
@@ -24,6 +25,52 @@ def calculator(expression: str) -> str:
         return str(result)
     except Exception as e:
         return f"Error: {str(e)}"
+
+def get_current_time(_: str) -> str:
+    """
+    Returns the current date and time as a formatted string.
+
+    Args:
+        _ (str): A required parameter for the Tool interface (not used).
+
+    Returns:
+        str: The current date and time in the format 'YYYY-MM-DD HH:MM:SS'.
+    """
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+def reverse_string(input_string: str) -> str:
+    """
+    Reverses a given string.
+
+    Args:
+        input_string (str): The string to reverse.
+
+    Returns:
+        str: The reversed string.
+    """
+    return input_string[::-1]
+
+def get_weather(date: str) -> str:
+    """
+    Returns weather information for a given date.
+    
+    Args:
+        date (str): The date in the format 'YYYY-MM-DD'.
+    
+    Returns:
+        str: Weather information for the given date.
+    """
+    try:
+        # Get today's date
+        today = datetime.now().strftime("%Y-%m-%d")
+        
+        # Return weather based on whether the date matches today
+        if date == today:
+            return "Sunny, 72°F"
+        else:
+            return "Rainy, 55°F"
+    except Exception as e:
+        return f"Error retrieving weather: {str(e)}"
 
 def main():
     # Load environment variables from .env file
@@ -50,46 +97,79 @@ def main():
 
     print("🤖 ChatOpenAI instance created successfully! 🎉")
 
-    # Create a tools list with a Tool object for the calculator
+    # Create a tools list with Tool objects for the calculator, current time, reverse string, and weather
     tools = [
         Tool(
             name="Calculator",
             func=calculator,
             description="Use this tool to evaluate mathematical expressions. Provide the expression as a string, and it will return the result."
+        ),
+        Tool(
+            name="get_current_time",
+            func=get_current_time,
+            description="Use this tool to get the current date and time. It returns the current timestamp in the format 'YYYY-MM-DD HH:MM:SS'."
+        ),
+        Tool(
+            name="reverse_string",
+            func=reverse_string,
+            description="Reverses a string. Input should be a single string."
+        ),
+        Tool(
+            name="get_weather",
+            func=get_weather,
+            description="Get weather information for a specific date. Input should be a date string in the format 'YYYY-MM-DD'. Use this tool to retrieve weather data for a given date."
         )
     ]
 
     print("🛠️ Tools initialized successfully! 🎉")
-
+    # System message to guide the agent behavior
+    system_prompt = (
+        "You are a professional and helpful AI assistant. "
+        "Provide concise and direct responses. "
+        "Use the available tools when needed to answer questions accurately."
+    )
     # Create an agent using create_agent
     agent_executor = create_agent(
         model=chat,
         tools=tools,
-        debug=True  # Enable verbose output
+        debug=False,  # Enable verbose output
+        system_prompt=system_prompt
     )
 
     print("🤖 Agent created successfully! 🎉")
 
-    # Test query
-    test_query = "What is 25 * 4 + 10?"
-    print(f"📝 Sending query to agent: {test_query}")
+    
 
-    try:
-        # Explicitly construct the messages array
-        messages = [HumanMessage(content=test_query)]
-        result = agent_executor.invoke({"messages": messages})
+    # List of test queries
+    test_queries = [
+        "What time is it right now?",
+        "What is 25 * 4 + 10?",
+        "Reverse the string 'Hello World'",
+        "What's the weather like today?"
+    ]
 
-        # Extract the final AI message
-        messages = result["messages"]
-        final_message = messages[-1].content
+    print("Running example queries:")
+    print()
 
-        print("💬 Agent Output:", final_message)
-        #result = agent_executor.invoke({"messages": messages})
-        #print("💬 Agent Output:", result['output'])
-    except Exception as e:
-        print("❌ Error while executing agent query:", str(e))
+    for query in test_queries:
+        print("\n📝 Query:", query)
+        print("─" * 50)
+        try:
+            messages = [
+                #SystemMessage(content=system_prompt),
+                HumanMessage(content=query)
+            ]
+            result = agent_executor.invoke({"messages": messages})
+            time.sleep(1)  # Add a small delay to avoid hitting rate limits
+            # Extract the final response from the messages list
+            final_message = result['messages'][-1].content
+            print("\n✅ Result:", final_message)
+        except Exception as e:
+            print("❌ Error while processing query:", str(e))
+        print()
 
-    print("✅ Query processed successfully! 🎉" )
+    print("\n" + "─" * 50)
+    print("🎉 Agent demo complete!")
 
 if __name__ == "__main__":
     main()
